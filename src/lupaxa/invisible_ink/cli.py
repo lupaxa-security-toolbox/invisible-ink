@@ -36,6 +36,12 @@ class State:
         self.verbose = False
 
 
+def _version(value: bool) -> None:
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
 def _state(ctx: typer.Context) -> State:
     if not isinstance(ctx.obj, State):
         ctx.obj = State()
@@ -148,7 +154,7 @@ def main_callback(
         "--version",
         is_flag=True,
         is_eager=True,
-        callback=lambda value: _version(value),
+        callback=_version,
     ),
 ) -> None:
     """Conceal and recover messages in ordinary Unicode text."""
@@ -165,12 +171,6 @@ def main_callback(
     if no_colour or not state.settings.colour:
         os.environ["NO_COLOR"] = "1"
     ctx.obj = state
-
-
-def _version(value: bool) -> None:
-    if value:
-        typer.echo(__version__)
-        raise typer.Exit()
 
 
 @app.command()
