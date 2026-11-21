@@ -18,7 +18,7 @@ Python 3.11 or newer:
 pip install lupaxa-invisible-ink
 ```
 
-The command is `invisible-ink`.
+The command is `invisible-ink`. The import path is `lupaxa.invisible_ink`. `lupaxa` is a namespace package — there is no `lupaxa/__init__.py`.
 
 ## Quick Start
 
