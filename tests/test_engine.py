@@ -10,14 +10,7 @@ from lupaxa.invisible_ink.cli import main
 from lupaxa.invisible_ink.config import Settings, fast_settings
 from lupaxa.invisible_ink.crypto import open_sealed, seal
 from lupaxa.invisible_ink.engine import clean_text, hide, inspect_text, measure, reveal
-from lupaxa.invisible_ink.errors import (
-    ArgumentError,
-    AuthenticationError,
-    CapacityError,
-    IntegrityError,
-    LimitError,
-    NotFoundError,
-)
+from lupaxa.invisible_ink.errors import ArgumentError, AuthenticationError, CapacityError, IntegrityError, LimitError, NotFoundError
 from lupaxa.invisible_ink.frame import HEADER, parse_frames
 from lupaxa.invisible_ink.methods import validate_mapping
 
@@ -36,29 +29,9 @@ MESSAGES = [
 def test_insertion_round_trip(method: str, message: str) -> None:
     settings = fast_settings()
     cover = "See you tomorrow! مرحبا"
-    text, warnings = hide(
-        cover,
-        message.encode(),
-        settings,
-        method_name=method,
-        framed=True,
-        placement="end",
-        seed=0,
-        password=None,
-        binary=False,
-    )
+    text, warnings = hide(cover, message.encode(), settings, method_name=method, framed=True, placement="end", seed=0, password=None, binary=False)
     assert warnings
-    found = reveal(
-        text,
-        settings,
-        method_name=method,
-        format_name="framed",
-        placement="end",
-        seed=0,
-        length=None,
-        password=None,
-        find_all=False,
-    )
+    found = reveal(text, settings, method_name=method, format_name="framed", placement="end", seed=0, length=None, password=None, find_all=False)
     assert found[0].payload == message.encode()
     assert found[0].authenticated
 
@@ -66,68 +39,18 @@ def test_insertion_round_trip(method: str, message: str) -> None:
 def test_binary_and_raw_zero_width() -> None:
     settings = fast_settings()
     payload = bytes(range(32))
-    text, _warnings = hide(
-        "cover",
-        payload,
-        settings,
-        method_name="zero-width",
-        framed=False,
-        placement="start",
-        seed=0,
-        password=None,
-        binary=True,
-    )
-    found = reveal(
-        text,
-        settings,
-        method_name="zero-width",
-        format_name="raw",
-        placement="start",
-        seed=0,
-        length=len(payload),
-        password=None,
-        find_all=False,
-    )
+    text, _warnings = hide("cover", payload, settings, method_name="zero-width", framed=False, placement="start", seed=0, password=None, binary=True)
+    found = reveal(text, settings, method_name="zero-width", format_name="raw", placement="start", seed=0, length=len(payload), password=None, find_all=False)
     assert found[0].payload == payload
 
 
 def test_spacing_and_homoglyph_need_capacity() -> None:
     settings = fast_settings()
     with pytest.raises(CapacityError):
-        hide(
-            "short cover",
-            b"hi",
-            settings,
-            method_name="spacing",
-            framed=True,
-            placement="end",
-            seed=0,
-            password=None,
-            binary=False,
-        )
+        hide("short cover", b"hi", settings, method_name="spacing", framed=True, placement="end", seed=0, password=None, binary=False)
     cover = "a" * 900
-    text, _warnings = hide(
-        cover,
-        b"hi",
-        settings,
-        method_name="homoglyph",
-        framed=True,
-        placement="end",
-        seed=0,
-        password=None,
-        binary=False,
-    )
-    found = reveal(
-        text,
-        settings,
-        method_name="homoglyph",
-        format_name="framed",
-        placement="end",
-        seed=0,
-        length=None,
-        password=None,
-        find_all=False,
-    )
+    text, _warnings = hide(cover, b"hi", settings, method_name="homoglyph", framed=True, placement="end", seed=0, password=None, binary=False)
+    found = reveal(text, settings, method_name="homoglyph", format_name="framed", placement="end", seed=0, length=None, password=None, find_all=False)
     assert found[0].payload == b"hi"
     info = measure(cover, "homoglyph", settings, placement="end", seed=0, encrypt=False)
     assert info.max_payload > 0
@@ -137,82 +60,23 @@ def test_spacing_and_homoglyph_need_capacity() -> None:
 def test_spacing_round_trip() -> None:
     settings = fast_settings()
     cover = " " * 900
-    text, _warnings = hide(
-        cover,
-        b"gap",
-        settings,
-        method_name="spacing",
-        framed=True,
-        placement="start",
-        seed=0,
-        password=None,
-        binary=False,
-    )
-    found = reveal(
-        text,
-        settings,
-        method_name="spacing",
-        format_name="framed",
-        placement="start",
-        seed=0,
-        length=None,
-        password=None,
-        find_all=False,
-    )
+    text, _warnings = hide(cover, b"gap", settings, method_name="spacing", framed=True, placement="start", seed=0, password=None, binary=False)
+    found = reveal(text, settings, method_name="spacing", format_name="framed", placement="start", seed=0, length=None, password=None, find_all=False)
     assert found[0].payload == b"gap"
 
 
 def test_encryption_round_trip_and_failure() -> None:
     settings = fast_settings()
-    text, _warnings = hide(
-        "hello",
-        b"secret",
-        settings,
-        method_name="zero-width",
-        framed=True,
-        placement="end",
-        seed=0,
-        password="correct horse",
-        binary=False,
-    )
-    found = reveal(
-        text,
-        settings,
-        method_name="zero-width",
-        format_name="framed",
-        placement="end",
-        seed=0,
-        length=None,
-        password="correct horse",
-        find_all=False,
-    )
+    text, _warnings = hide("hello", b"secret", settings, method_name="zero-width", framed=True, placement="end", seed=0, password="correct horse", binary=False)
+    found = reveal(text, settings, method_name="zero-width", format_name="framed", placement="end", seed=0, length=None, password="correct horse", find_all=False)
     assert found[0].payload == b"secret"
     with pytest.raises(AuthenticationError) as exc:
-        reveal(
-            text,
-            settings,
-            method_name="zero-width",
-            format_name="framed",
-            placement="end",
-            seed=0,
-            length=None,
-            password="wrong",
-            find_all=False,
-        )
+        reveal(text, settings, method_name="zero-width", format_name="framed", placement="end", seed=0, length=None, password="wrong", find_all=False)
     assert "correct horse" not in str(exc.value)
     sealed = seal(b"", "pw", settings)
     sealed.body = sealed.body[:-1] + bytes([sealed.body[-1] ^ 1])
     with pytest.raises(AuthenticationError):
-        open_sealed(
-            sealed.body,
-            "pw",
-            salt=sealed.salt,
-            nonce=sealed.nonce,
-            time_cost=sealed.time_cost,
-            memory_kib=sealed.memory_kib,
-            parallelism=sealed.parallelism,
-            settings=settings,
-        )
+        open_sealed(sealed.body, "pw", salt=sealed.salt, nonce=sealed.nonce, time_cost=sealed.time_cost, memory_kib=sealed.memory_kib, parallelism=sealed.parallelism, settings=settings)
 
 
 def test_invalid_kdf_and_mapping() -> None:
@@ -227,17 +91,7 @@ def test_invalid_kdf_and_mapping() -> None:
 
 def test_inspect_and_clean() -> None:
     settings = fast_settings()
-    text, _warnings = hide(
-        "visible",
-        b"hidden",
-        settings,
-        method_name="zero-width",
-        framed=True,
-        placement="end",
-        seed=0,
-        password=None,
-        binary=False,
-    )
+    text, _warnings = hide("visible", b"hidden", settings, method_name="zero-width", framed=True, placement="end", seed=0, password=None, binary=False)
     report = inspect_text(text, settings, show_all=False)
     assert report["invisible"] > 0
     assert "hidden" not in json.dumps(report)
@@ -252,17 +106,7 @@ def test_inspect_and_clean() -> None:
 def test_candidate_is_not_confirmed() -> None:
     settings = fast_settings()
     with pytest.raises(NotFoundError):
-        reveal(
-            "plain\u200b\u200c",
-            settings,
-            method_name="zero-width",
-            format_name="framed",
-            placement="end",
-            seed=0,
-            length=None,
-            password=None,
-            find_all=False,
-        )
+        reveal("plain\u200b\u200c", settings, method_name="zero-width", format_name="framed", placement="end", seed=0, length=None, password=None, find_all=False)
 
 
 def test_huge_declared_length_is_rejected() -> None:

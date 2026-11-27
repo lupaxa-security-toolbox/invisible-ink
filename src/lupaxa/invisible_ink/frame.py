@@ -79,15 +79,7 @@ class Frame:
     body: bytes = b""
 
 
-def build_frame(
-    *,
-    method: str,
-    placement: str,
-    seed: int,
-    payload: bytes,
-    binary: bool,
-    sealed: Sealed | None,
-) -> bytes:
+def build_frame(*, method: str, placement: str, seed: int, payload: bytes, binary: bool, sealed: Sealed | None) -> bytes:
     """Pack a framed message."""
     if method not in METHOD_IDS:
         raise IntegrityError(f"Unknown method {method!r}.")
@@ -114,23 +106,7 @@ def build_frame(
     if len(payload) > 0xFFFFFFFF or len(body) > 0xFFFFFFFF:
         raise LimitError("Payload exceeds the framed length field.")
     header = HEADER.pack(
-        MAGIC,
-        VERSION,
-        METHOD_IDS[method],
-        flags,
-        PLACEMENT_IDS[placement],
-        seed & 0xFFFFFFFFFFFFFFFF,
-        len(payload),
-        len(body),
-        time_cost,
-        memory_kib,
-        parallelism,
-        alg,
-        kdf,
-        0,
-        salt,
-        nonce,
-        checksum,
+        MAGIC, VERSION, METHOD_IDS[method], flags, PLACEMENT_IDS[placement], seed & 0xFFFFFFFFFFFFFFFF, len(payload), len(body), time_cost, memory_kib, parallelism, alg, kdf, 0, salt, nonce, checksum
     )
     return header + body
 
@@ -146,25 +122,7 @@ def parse_frames(data: bytes, settings: Settings) -> list[tuple[Frame, int]]:
             fields = HEADER.unpack(data[offset : offset + HEADER_LEN])
         except struct.error as exc:
             raise IntegrityError("Framed header is truncated.") from exc
-        (
-            _magic,
-            version,
-            method_id,
-            flags,
-            placement_id,
-            seed,
-            payload_len,
-            body_len,
-            time_cost,
-            memory_kib,
-            parallelism,
-            alg,
-            kdf,
-            _reserved,
-            salt,
-            nonce,
-            checksum,
-        ) = fields
+        (_magic, version, method_id, flags, placement_id, seed, payload_len, body_len, time_cost, memory_kib, parallelism, alg, kdf, _reserved, salt, nonce, checksum) = fields
         if version != VERSION:
             raise IntegrityError(f"Unsupported framed version {version}.")
         if method_id not in METHOD_NAMES or placement_id not in PLACEMENT_NAMES:

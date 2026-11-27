@@ -32,15 +32,7 @@ class Sealed:
 
 
 def _key(password: str, salt: bytes, time_cost: int, memory_kib: int, parallelism: int) -> bytes:
-    raw = hash_secret_raw(
-        secret=password.encode("utf-8"),
-        salt=salt,
-        time_cost=time_cost,
-        memory_cost=memory_kib,
-        parallelism=parallelism,
-        hash_len=32,
-        type=Type.ID,
-    )
+    raw = hash_secret_raw(secret=password.encode("utf-8"), salt=salt, time_cost=time_cost, memory_cost=memory_kib, parallelism=parallelism, hash_len=32, type=Type.ID)
     return bytes(raw)
 
 
@@ -51,27 +43,10 @@ def seal(plaintext: bytes, password: str, settings: Settings) -> Sealed:
     nonce = os.urandom(NONCE_LEN)
     key = _key(password, salt, settings.kdf_time_cost, settings.kdf_memory_kib, settings.kdf_parallelism)
     body = AESGCM(key).encrypt(nonce, plaintext, None)
-    return Sealed(
-        body=body,
-        salt=salt,
-        nonce=nonce,
-        time_cost=settings.kdf_time_cost,
-        memory_kib=settings.kdf_memory_kib,
-        parallelism=settings.kdf_parallelism,
-    )
+    return Sealed(body=body, salt=salt, nonce=nonce, time_cost=settings.kdf_time_cost, memory_kib=settings.kdf_memory_kib, parallelism=settings.kdf_parallelism)
 
 
-def open_sealed(
-    body: bytes,
-    password: str,
-    *,
-    salt: bytes,
-    nonce: bytes,
-    time_cost: int,
-    memory_kib: int,
-    parallelism: int,
-    settings: Settings,
-) -> bytes:
+def open_sealed(body: bytes, password: str, *, salt: bytes, nonce: bytes, time_cost: int, memory_kib: int, parallelism: int, settings: Settings) -> bytes:
     """Decrypt a sealed body or raise an authentication error."""
     if len(salt) != SALT_LEN or len(nonce) != NONCE_LEN:
         raise AuthenticationError("Encryption salt or nonce has an invalid length.")

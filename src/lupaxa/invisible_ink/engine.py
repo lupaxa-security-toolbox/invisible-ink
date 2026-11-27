@@ -8,30 +8,9 @@ from typing import Any
 
 from lupaxa.invisible_ink.config import Settings
 from lupaxa.invisible_ink.crypto import open_sealed, seal
-from lupaxa.invisible_ink.errors import (
-    ArgumentError,
-    CapacityError,
-    IntegrityError,
-    NotFoundError,
-    UnsupportedError,
-    VerificationError,
-)
+from lupaxa.invisible_ink.errors import ArgumentError, CapacityError, IntegrityError, NotFoundError, UnsupportedError, VerificationError
 from lupaxa.invisible_ink.frame import HEADER_LEN, Frame, build_frame, parse_frames
-from lupaxa.invisible_ink.methods import (
-    TAG_TERM,
-    ZW_ONE,
-    ZW_ZERO,
-    Alphabet,
-    Capacity,
-    Homoglyph,
-    Spacing,
-    Tag,
-    Variation,
-    ZeroWidth,
-    get_method,
-    is_tag,
-    selector_to_byte,
-)
+from lupaxa.invisible_ink.methods import TAG_TERM, ZW_ONE, ZW_ZERO, Alphabet, Capacity, Homoglyph, Spacing, Tag, Variation, ZeroWidth, get_method, is_tag, selector_to_byte
 from lupaxa.invisible_ink.textutil import bits_to_bytes, byte_offset, graphemes, utf8_len
 
 INSERTION = {"zero-width", "variation", "tag"}
@@ -62,16 +41,7 @@ def overhead(framed: bool, encrypt: bool) -> tuple[int, int]:
     return (HEADER_LEN if framed else 0, 16 if encrypt and framed else 0)
 
 
-def measure(
-    cover: str,
-    method_name: str,
-    settings: Settings,
-    *,
-    placement: str,
-    seed: int,
-    encrypt: bool,
-    alphabet: Alphabet | None = None,
-) -> Capacity:
+def measure(cover: str, method_name: str, settings: Settings, *, placement: str, seed: int, encrypt: bool, alphabet: Alphabet | None = None) -> Capacity:
     """Calculate embedding capacity for a cover and method."""
     method = get_method(method_name, alphabet)
     if not method.supports(placement):
@@ -94,28 +64,12 @@ def measure(
         raw_bytes = eligible // 8
     max_payload = max(0, raw_bytes - frame_overhead - crypto_overhead)
     return Capacity(
-        eligible=eligible,
-        raw_symbols=eligible,
-        raw_bytes=raw_bytes,
-        framing_overhead=frame_overhead,
-        encryption_overhead=crypto_overhead,
-        max_payload=max_payload,
-        restrictions=restrictions,
+        eligible=eligible, raw_symbols=eligible, raw_bytes=raw_bytes, framing_overhead=frame_overhead, encryption_overhead=crypto_overhead, max_payload=max_payload, restrictions=restrictions
     )
 
 
 def hide(
-    cover: str,
-    payload: bytes,
-    settings: Settings,
-    *,
-    method_name: str,
-    framed: bool,
-    placement: str,
-    seed: int,
-    password: str | None,
-    binary: bool,
-    alphabet: Alphabet | None = None,
+    cover: str, payload: bytes, settings: Settings, *, method_name: str, framed: bool, placement: str, seed: int, password: str | None, binary: bool, alphabet: Alphabet | None = None
 ) -> tuple[str, list[str]]:
     """Conceal a payload and return the encoded text plus warnings."""
     _check_sizes(cover, payload, settings)
@@ -130,14 +84,7 @@ def hide(
         sealed = seal(payload, password, settings)
         body_payload = sealed.body
     if framed:
-        encoded = build_frame(
-            method=method_name,
-            placement=placement,
-            seed=seed,
-            payload=payload,
-            binary=binary,
-            sealed=sealed,
-        )
+        encoded = build_frame(method=method_name, placement=placement, seed=seed, payload=payload, binary=binary, sealed=sealed)
     else:
         encoded = body_payload
     if len(encoded) > settings.max_message_bytes:
@@ -159,17 +106,7 @@ def _warnings(method_name: str) -> list[str]:
 
 
 def reveal(
-    text: str,
-    settings: Settings,
-    *,
-    method_name: str | None,
-    format_name: str,
-    placement: str,
-    seed: int,
-    length: int | None,
-    password: str | None,
-    find_all: bool,
-    alphabet: Alphabet | None = None,
+    text: str, settings: Settings, *, method_name: str | None, format_name: str, placement: str, seed: int, length: int | None, password: str | None, find_all: bool, alphabet: Alphabet | None = None
 ) -> list[Recovered]:
     """Recover confirmed framed messages, or a raw payload when requested."""
     if utf8_len(text) > settings.max_cover_bytes:
@@ -204,14 +141,7 @@ def reveal(
     return confirmed if find_all or len(confirmed) == 1 else confirmed[:1]
 
 
-def _decode_raw(
-    text: str,
-    name: str,
-    placement: str,
-    seed: int,
-    length: int | None,
-    alphabet: Alphabet | None,
-) -> bytes:
+def _decode_raw(text: str, name: str, placement: str, seed: int, length: int | None, alphabet: Alphabet | None) -> bytes:
     method = get_method(name, alphabet)
     if isinstance(method, Tag):
         sequences = method.extract_sequences(text)
@@ -237,15 +167,7 @@ def _decode_raw(
     return payload
 
 
-def _decode_framed(
-    text: str,
-    name: str,
-    placement: str,
-    seed: int,
-    password: str | None,
-    settings: Settings,
-    alphabet: Alphabet | None,
-) -> list[Recovered]:
+def _decode_framed(text: str, name: str, placement: str, seed: int, password: str | None, settings: Settings, alphabet: Alphabet | None) -> list[Recovered]:
     method = get_method(name, alphabet)
     try:
         if isinstance(method, Tag):
@@ -284,26 +206,14 @@ def _open_frame(frame: Frame, password: str | None, settings: Settings) -> Recov
         return Recovered(frame.payload, frame.method, False, True, frame.binary, False)
     if password is None:
         raise ArgumentError("This framed message is encrypted. Provide a password.")
-    payload = open_sealed(
-        frame.body,
-        password,
-        salt=frame.salt,
-        nonce=frame.nonce,
-        time_cost=frame.time_cost,
-        memory_kib=frame.memory_kib,
-        parallelism=frame.parallelism,
-        settings=settings,
-    )
+    payload = open_sealed(frame.body, password, salt=frame.salt, nonce=frame.nonce, time_cost=frame.time_cost, memory_kib=frame.memory_kib, parallelism=frame.parallelism, settings=settings)
     if len(payload) != frame.declared_length:
         raise IntegrityError("Decrypted length does not match the framed payload length.")
     return Recovered(payload, frame.method, True, True, frame.binary, False)
 
 
 def _has_candidate(text: str) -> bool:
-    return any(
-        char in {ZW_ZERO, ZW_ONE, TAG_TERM} or is_tag(ord(char)) or selector_to_byte(ord(char)) is not None
-        for char in text
-    )
+    return any(char in {ZW_ZERO, ZW_ONE, TAG_TERM} or is_tag(ord(char)) or selector_to_byte(ord(char)) is not None for char in text)
 
 
 def inspect_text(text: str, settings: Settings, *, show_all: bool) -> dict[str, Any]:
@@ -401,14 +311,7 @@ def _candidate_report(text: str, settings: Settings) -> list[dict[str, Any]]:
     return report
 
 
-def clean_text(
-    text: str,
-    settings: Settings,
-    *,
-    mode: str,
-    method_name: str | None,
-    alphabet: Alphabet | None = None,
-) -> tuple[str, list[str]]:
+def clean_text(text: str, settings: Settings, *, mode: str, method_name: str | None, alphabet: Alphabet | None = None) -> tuple[str, list[str]]:
     """Remove recognised concealment. Aggressive mode can change legitimate text."""
     warnings: list[str] = []
     if mode == "aggressive":
@@ -421,12 +324,7 @@ def clean_text(
     return cleaned, warnings
 
 
-def _clean_conservative(
-    text: str,
-    settings: Settings,
-    method_name: str | None,
-    alphabet: Alphabet | None,
-) -> tuple[str, list[str]]:
+def _clean_conservative(text: str, settings: Settings, method_name: str | None, alphabet: Alphabet | None) -> tuple[str, list[str]]:
     notes = [
         "Characters that cannot be distinguished from legitimate Unicode were left unchanged.",
         "Original whitespace cannot be reconstructed when a no-break space was already present.",
@@ -501,17 +399,7 @@ def survival(text: str, settings: Settings, *, password: str | None, original: b
         matches = False
         error = ""
         try:
-            found = reveal(
-                changed,
-                settings,
-                method_name=None,
-                format_name="auto",
-                placement="end",
-                seed=0,
-                length=None,
-                password=password,
-                find_all=False,
-            )
+            found = reveal(changed, settings, method_name=None, format_name="auto", placement="end", seed=0, length=None, password=password, find_all=False)
             recoverable = True
             matches = original is None or found[0].payload == original
         except (NotFoundError, IntegrityError, ArgumentError, VerificationError) as exc:

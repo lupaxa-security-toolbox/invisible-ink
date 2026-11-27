@@ -149,13 +149,7 @@ def main_callback(
     no_colour: bool = typer.Option(False, "--no-colour", is_flag=True),
     non_interactive: bool = typer.Option(False, "--non-interactive", is_flag=True),
     force: bool = typer.Option(False, "--force", is_flag=True),
-    version: bool = typer.Option(
-        False,
-        "--version",
-        is_flag=True,
-        is_eager=True,
-        callback=_version,
-    ),
+    version: bool = typer.Option(False, "--version", is_flag=True, is_eager=True, callback=_version),
 ) -> None:
     """Conceal and recover messages in ordinary Unicode text."""
     if version:
@@ -333,10 +327,7 @@ def inspect(
     if isinstance(warning_list, list):
         result.warnings.extend(str(item) for item in warning_list)
     if not state.json:
-        typer.echo(
-            f"characters {report['characters']} utf8 {report['utf8_bytes']} "
-            f"invisible {report['invisible']} selectors {report['variation_selectors']} tags {report['tag_characters']}"
-        )
+        typer.echo(f"characters {report['characters']} utf8 {report['utf8_bytes']} invisible {report['invisible']} selectors {report['variation_selectors']} tags {report['tag_characters']}")
     _emit(ctx, result)
 
 
@@ -354,13 +345,7 @@ def clean(
     """Remove recognised concealment characters."""
     state = _state(ctx)
     text = _source_text(state, source)
-    cleaned, warnings = clean_text(
-        text,
-        state.settings,
-        mode=mode or state.settings.clean_mode,
-        method_name=method,
-        alphabet=_mapping(mapping),
-    )
+    cleaned, warnings = clean_text(text, state.settings, mode=mode or state.settings.clean_mode, method_name=method, alphabet=_mapping(mapping))
     result = Result("clean", data={"changed": cleaned != text, "characters": len(cleaned)}, warnings=warnings)
     if dry_run or report:
         result.data["removed"] = len(text) - len(cleaned)
@@ -389,15 +374,7 @@ def capacity(
     """Report how much payload a cover can hold."""
     state = _state(ctx)
     cover_text = _cover_text(state, cover, cover_file, cover_stdin)
-    info = measure(
-        cover_text,
-        method or state.settings.method,
-        state.settings,
-        placement=placement or state.settings.placement,
-        seed=seed,
-        encrypt=encrypt,
-        alphabet=_mapping(mapping),
-    )
+    info = measure(cover_text, method or state.settings.method, state.settings, placement=placement or state.settings.placement, seed=seed, encrypt=encrypt, alphabet=_mapping(mapping))
     result = Result(
         "capacity",
         data={
@@ -429,24 +406,10 @@ def verify(
     state = _state(ctx)
     text = _source_text(state, source)
     password = _password(ctx, password_file, confirm=False) if password_file else None
-    found = recover(
-        text,
-        state.settings,
-        method_name=method,
-        format_name="framed",
-        placement=state.settings.placement,
-        seed=0,
-        length=None,
-        password=password,
-        find_all=False,
-    )
+    found = recover(text, state.settings, method_name=method, format_name="framed", placement=state.settings.placement, seed=0, length=None, password=password, find_all=False)
     expected = _optional_message(state, message, message_file, binary)
     matches = expected is None or found[0].payload == expected
-    result = Result(
-        "verify",
-        success=matches,
-        data={"recoverable": True, "matches": matches, "method": found[0].method},
-    )
+    result = Result("verify", success=matches, data={"recoverable": True, "matches": matches, "method": found[0].method})
     if not matches:
         result.add_error("verification_failed", "Recovered payload does not match the original message.", exit_code=9)
         _emit(ctx, result)
@@ -477,10 +440,7 @@ def survive_cmd(
 
 
 @app.command()
-def methods(
-    ctx: typer.Context,
-    details: bool = typer.Option(False, "--details", is_flag=True),
-) -> None:
+def methods(ctx: typer.Context, details: bool = typer.Option(False, "--details", is_flag=True)) -> None:
     """List encoding methods."""
     state = _state(ctx)
     rows = []
@@ -503,13 +463,7 @@ def methods(
     _emit(ctx, Result("methods", data={"methods": rows}))
 
 
-def _message_bytes(
-    state: State,
-    message: str | None,
-    message_file: Path | None,
-    message_stdin: bool,
-    binary: bool,
-) -> bytes:
+def _message_bytes(state: State, message: str | None, message_file: Path | None, message_stdin: bool, binary: bool) -> bytes:
     sources = [message is not None, message_file is not None, message_stdin]
     if sum(sources) != 1:
         raise ArgumentError("Provide exactly one of a message, --message-file, or --message-stdin.")

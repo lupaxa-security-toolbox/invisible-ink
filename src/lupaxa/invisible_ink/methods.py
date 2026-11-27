@@ -6,13 +6,7 @@ import base64
 from dataclasses import dataclass, field
 
 from lupaxa.invisible_ink.errors import ArgumentError, CapacityError, IntegrityError, UnsupportedError
-from lupaxa.invisible_ink.textutil import (
-    graphemes,
-    insert_at_boundaries,
-    insertion_points,
-    order_indexes,
-    spread_chunks,
-)
+from lupaxa.invisible_ink.textutil import graphemes, insert_at_boundaries, insertion_points, order_indexes, spread_chunks
 
 ZW_ZERO = "\u200b"
 ZW_ONE = "\u200c"
