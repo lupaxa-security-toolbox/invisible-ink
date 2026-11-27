@@ -83,10 +83,7 @@ def hide(
             raise UnsupportedError("Encryption requires the framed format.")
         sealed = seal(payload, password, settings)
         body_payload = sealed.body
-    if framed:
-        encoded = build_frame(method=method_name, placement=placement, seed=seed, payload=payload, binary=binary, sealed=sealed)
-    else:
-        encoded = body_payload
+    encoded = build_frame(method=method_name, placement=placement, seed=seed, payload=payload, binary=binary, sealed=sealed) if framed else body_payload
     if len(encoded) > settings.max_message_bytes:
         raise CapacityError("Encoded message exceeds the configured size limit.")
     method = get_method(method_name, alphabet)
